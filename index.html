@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronunciation Practice: "The"</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        :root {
+            --color-bg: #111827;
+            --color-card: #1f2937;
+            --color-accent-pairs: #fbbf24; /* Amber for Pairs */
+            --color-accent-conv: #818cf8; /* Indigo for Conversation */
+            --color-accent-ipa: #34d399;  /* Emerald for Phonetics */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Tab Animations */
+        .screen-section {
+            display: none;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        }
+
+        .screen-section.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Item Interactions */
+        .content-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+        
+        .content-item:hover {
+            transform: translateX(4px);
+            background-color: #374151;
+        }
+
+        /* Specific styling for the script lines in conversation view */
+        .script-line {
+            transition: background-color 0.3s ease, padding 0.3s ease;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+        .script-line:hover {
+            background-color: rgba(55, 65, 81, 0.5);
+        }
+
+        .border-pairs:hover, .border-pairs.speaking-highlight { border-left-color: var(--color-accent-pairs); }
+
+        .speaking-highlight {
+            background-color: #374151 !important;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #6366f1; /* Indigo accent for generic highlight */
+        }
+
+        .ipa-text {
+            color: #9ca3af;
+            font-family: monospace;
+        }
+
+        /* Navigation Tabs */
+        .nav-btn {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            opacity: 0.6;
+            white-space: nowrap;
+        }
+        .nav-btn:hover { opacity: 1; }
+        .nav-btn.active {
+            opacity: 1;
+            border-bottom-width: 2px;
+        }
+
+        .play-button {
+            transition: transform 0.1s;
+        }
+        .play-button:active { transform: scale(0.95); }
+        .is-speaking {
+            background-color: #ef4444 !important;
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2 self-start md:self-center">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <i data-lucide="mic" class="w-5 h-5 text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">Pronounce "The"</h1>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-4 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 no-scrollbar">
+                <button onclick="switchTab('pairs')" id="tab-pairs" class="nav-btn active text-sm md:text-base font-medium pb-1 border-amber-400 text-amber-400">
+                    1. Pairs
+                </button>
+                <button onclick="switchTab('conversation')" id="tab-conversation" class="nav-btn text-sm md:text-base font-medium pb-1 border-indigo-400 hover:text-indigo-400 text-gray-400">
+                    2. Conversation
+                </button>
+                <button onclick="switchTab('phonetic')" id="tab-phonetic" class="nav-btn text-sm md:text-base font-medium pb-1 border-emerald-400 hover:text-emerald-400 text-gray-400">
+                    3. Conversation (IPA)
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 relative">
+        
+        <!-- SCREEN 1: PAIRS -->
+        <section id="screen-pairs" class="screen-section active">
+            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-amber-400">Pairs</h2>
+                    <p class="text-gray-400 text-sm">Consonants vs Vowels</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Consonants Column -->
+                    <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50">
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                            <h3 class="text-lg font-semibold text-gray-200">
+                                /ðə/ (Consonants)
+                            </h3>
+                            <button id="btn-play-cons" class="play-button flex items-center bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">
+                                <i data-lucide="play" class="w-3 h-3 mr-1.5"></i> Play List
+                            </button>
+                        </div>
+                        <ul id="list-pairs-consonants" class="space-y-3">
+                            <!-- JS Injected -->
+                        </ul>
+                    </div>
+                    
+                    <!-- Vowels Column -->
+                    <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50">
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                            <h3 class="text-lg font-semibold text-gray-200">
+                                /ði/ (Vowels)
+                            </h3>
+                            <button id="btn-play-vows" class="play-button flex items-center bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">
+                                <i data-lucide="play" class="w-3 h-3 mr-1.5"></i> Play List
+                            </button>
+                        </div>
+                        <ul id="list-pairs-vowels" class="space-y-3">
+                            <!-- JS Injected -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: CONVERSATION (TEXT ONLY) -->
+        <section id="screen-conversation" class="screen-section">
+            <div class="bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-indigo-400">Conversation</h2>
+                        <p class="text-gray-400 text-sm">Standard Dialogue</p>
+                    </div>
+                    <button id="btn-play-conv" class="play-button flex items-center bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i> Play Dialogue
+                    </button>
+                </div>
+                <!-- Unified Text Container -->
+                <div id="container-conversation" class="bg-gray-900 rounded-xl p-6 border border-gray-700 leading-relaxed text-lg">
+                    <!-- JS Injected as script lines -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: CONVERSATION (PHONETIC) -->
+        <section id="screen-phonetic" class="screen-section">
+            <div class="bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-emerald-400">Phonetic Script</h2>
+                        <p class="text-gray-400 text-sm">Conversation with Transcription</p>
+                    </div>
+                    <button id="btn-play-ipa" class="play-button flex items-center bg-emerald-500 hover:bg-emerald-600 text-gray-900 px-4 py-2 rounded-lg font-bold text-sm shadow-lg">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i> Play Phonetics
+                    </button>
+                </div>
+                <!-- Unified Text Container -->
+                <div id="container-phonetic" class="bg-gray-900 rounded-xl p-6 border border-gray-700 leading-relaxed">
+                    <!-- JS Injected as script lines -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-gray-500 text-center py-6 text-sm border-t border-gray-800">
+        <p>Click any line to hear it spoken.</p>
+    </footer>
+
+    <script>
+        // --- DATA ---
+        const data = {
+            // Screen 1 Data
+            pairs: {
+                consonants: [
+                    { text: "the book", ipa: "/ðə bʊk/" },
+                    { text: "the cat", ipa: "/ðə kæt/" },
+                    { text: "the man", ipa: "/ðə mæn/" },
+                    { text: "the dog", ipa: "/ðə dɔg/" },
+                    { text: "the phone", ipa: "/ðə foʊn/" },
+                    { text: "the table", ipa: "/ðə teɪbəl/" },
+                    { text: "the movie", ipa: "/ðə muvi/" },
+                    { text: "the girl", ipa: "/ðə ɡɝl/" }
+                ],
+                vowels: [
+                    { text: "the apple", ipa: "/ði æpəl/" },
+                    { text: "the orange", ipa: "/ði ɔrɪndʒ/" },
+                    { text: "the owl", ipa: "/ði aʊl/" },
+                    { text: "the elephant", ipa: "/ði ɛləfənt/" },
+                    { text: "the umbrella", ipa: "/ði ʌmbɹɛlə/" },
+                    { text: "the ocean", ipa: "/ði oʊʃən/" },
+                    { text: "the island", ipa: "/ði aɪlənd/" },
+                    { text: "the idea", ipa: "/ði aɪˈdiə/" }
+                ]
+            },
+            // Screen 2 & 3 Data
+            conversation: [
+                { role: "Teacher", text: "Okay class, today we practice “the”. Who can give me an example?", ipa: "/ˈteɪtʃɚ: ˈoʊkeɪ klæs, təˈdeɪ wi ˈpræktɪs “ðə”. hu kən ɡɪv mi ən ɪɡˈzæmpəl?/" },
+                { role: "Student", text: "The pizza is mine. Don’t touch it.", ipa: "/ðə ˈpitsə ɪz maɪn. doʊnt tʌtʃ ɪt./" },
+                { role: "Teacher", text: "Good! Another one?", ipa: "/ɡʊd! əˈnʌðɚ wʌn?/" },
+                { role: "Student", text: "The teacher is talking too much.", ipa: "/ðə ˈtitʃɚ ɪz ˈtɔkɪŋ tu mʌtʃ./" },
+                { role: "Teacher", text: "…Wait, what?", ipa: "/weɪt, wʌt?/" },
+                { role: "Student", text: "Just practicing!", ipa: "/dʒʌst ˈpræktɪsɪŋ!/" },
+                { role: "Teacher", text: "Very funny. How about: The sun is hot.", ipa: "/ˈvɛri ˈfʌni. haʊ əˈbaʊt: ðə sʌn ɪz hɑt./" },
+                { role: "Student", text: "And the ice cream is melting. Can I eat it now?", ipa: "/ænd ði aɪs ˌkrim ɪz ˈmɛltɪŋ. kæn aɪ it ɪt naʊ?/" },
+                { role: "Teacher", text: "Only if you give the teacher a slice of the pizza.", ipa: "/ˈoʊnli ɪf ju ɡɪv ðə ˈtitʃɚ ə slaɪs əv ðə ˈpitsə./" },
+                { role: "Student", text: "Deal! The student is happy now.", ipa: "/dil! ðə ˈstudənt ɪz ˈhæpi naʊ./" },
+                { role: "Teacher", text: "And the teacher is, too.", ipa: "/ænd ðə ˈtitʃɚ ɪz, tu./" }
+            ]
+        };
+
+        // --- STATE ---
+        let currentTab = 'pairs';
+        let synth = new Tone.Synth().toDestination();
+        let speaker = window.speechSynthesis;
+        let isSpeaking = false;
+        let stopFlag = false;
+        let selectedVoice = null;
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            lucide.createIcons();
+            initSpeech();
+            renderAll();
+            
+            // Event Listeners
+            document.getElementById('btn-play-cons').onclick = () => togglePlayList('consonants', data.pairs.consonants);
+            document.getElementById('btn-play-vows').onclick = () => togglePlayList('vowels', data.pairs.vowels);
+            document.getElementById('btn-play-conv').onclick = () => togglePlayConversation('conversation');
+            document.getElementById('btn-play-ipa').onclick = () => togglePlayConversation('phonetic');
+        };
+
+        // --- NAVIGATION ---
+        window.switchTab = (tabId) => {
+            // Reset buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = 'nav-btn text-sm md:text-base font-medium pb-1 text-gray-400';
+            });
+            
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.remove('text-gray-400');
+            activeBtn.classList.add('active');
+            
+            // Specific Colors
+            if(tabId === 'pairs') activeBtn.classList.add('border-amber-400', 'text-amber-400');
+            if(tabId === 'conversation') activeBtn.classList.add('border-indigo-400', 'text-indigo-400');
+            if(tabId === 'phonetic') activeBtn.classList.add('border-emerald-400', 'text-emerald-400');
+
+            // Switch Screens
+            document.querySelectorAll('.screen-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${tabId}`).classList.add('active');
+            
+            if(isSpeaking) stopPlayback();
+            currentTab = tabId;
+        };
+
+        // --- RENDERING ---
+        function renderAll() {
+            // 1. Pairs Screen
+            const consList = document.getElementById('list-pairs-consonants');
+            const vowList = document.getElementById('list-pairs-vowels');
+            
+            data.pairs.consonants.forEach((item, idx) => {
+                const li = createListItem(item, 'pairs-c-' + idx, 'border-pairs', 'C4');
+                consList.appendChild(li);
+            });
+            
+            data.pairs.vowels.forEach((item, idx) => {
+                const li = createListItem(item, 'pairs-v-' + idx, 'border-pairs', 'E4');
+                vowList.appendChild(li);
+            });
+
+            // 2. Conversation (Text Only)
+            const convContainer = document.getElementById('container-conversation');
+            data.conversation.forEach((item, idx) => {
+                convContainer.appendChild(createScriptLine(item, idx, 'conversation', false));
+            });
+
+            // 3. Phonetic (Text + IPA)
+            const ipaContainer = document.getElementById('container-phonetic');
+            data.conversation.forEach((item, idx) => {
+                ipaContainer.appendChild(createScriptLine(item, idx, 'phonetic', true));
+            });
+        }
+
+        function createListItem(item, id, borderClass, toneNote) {
+            const li = document.createElement('li');
+            li.id = `item-${id}`;
+            li.className = `content-item ${borderClass} bg-gray-700 p-3 rounded-lg flex justify-between items-center`;
+            li.innerHTML = `
+                <span class="text-base font-medium text-gray-200">${item.text}</span>
+                <span class="ipa-text text-xs">${item.ipa}</span>
+            `;
+            li.onclick = () => {
+                playTone(toneNote);
+                speakSingle(item.text);
+            };
+            return li;
+        }
+
+        // New: Create lines that look like a script
+        function createScriptLine(item, idx, context, showIPA) {
+            const div = document.createElement('div');
+            div.id = `item-${context}-${idx}`;
+            div.className = `script-line border-l-4 border-transparent`;
+            
+            const isTeacher = item.role === 'Teacher';
+            const nameColor = isTeacher ? 'text-pink-400' : 'text-blue-400';
+            
+            let html = `
+                <div>
+                    <span class="font-bold uppercase text-sm tracking-wide ${nameColor} mr-2">${item.role}:</span>
+                    <span class="text-gray-200">${item.text}</span>
+                </div>
+            `;
+            
+            if (showIPA) {
+                html += `<div class="ipa-text text-sm font-mono mt-1 ml-4 text-emerald-300/70">${item.ipa}</div>`;
+            }
+
+            div.innerHTML = html;
+            div.onclick = () => {
+                playTone(isTeacher ? 'G3' : 'C4');
+                speakSingle(item.text);
+            };
+            return div;
+        }
+
+        // --- AUDIO LOGIC ---
+        function initSpeech() {
+            const setVoice = () => {
+                const voices = speaker.getVoices();
+                selectedVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google')) || 
+                                voices.find(v => v.lang.includes('en-US')) || 
+                                voices[0];
+            };
+            if (speaker.onvoiceschanged !== undefined) speaker.onvoiceschanged = setVoice;
+            setVoice();
+        }
+
+        function playTone(note) {
+            if (Tone.context.state !== 'running') Tone.context.resume();
+            synth.triggerAttackRelease(note, '8n');
+        }
+
+        function speakSingle(text) {
+            speaker.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.voice = selectedVoice;
+            u.rate = 0.9;
+            speaker.speak(u);
+        }
+
+        // Play Logic for PAIRS (Lists)
+        async function togglePlayList(type, dataArray) {
+            const btnId = type === 'consonants' ? 'btn-play-cons' : 'btn-play-vows';
+            const btn = document.getElementById(btnId);
+            const prefix = type === 'consonants' ? 'pairs-c' : 'pairs-v';
+
+            if (isSpeaking) { stopPlayback(); return; }
+
+            isSpeaking = true;
+            stopFlag = false;
+            updateBtnState(btn, true);
+
+            for (let i = 0; i < dataArray.length; i++) {
+                if (stopFlag) break;
+                const domId = `item-${prefix}-${i}`;
+                highlightAndScroll(domId);
+                await speakPromise(dataArray[i].text);
+                removeHighlight(domId);
+                if (!stopFlag) await new Promise(r => setTimeout(r, 300));
+            }
+
+            stopPlayback();
+        }
+
+        // Play Logic for CONVERSATION (Script)
+        async function togglePlayConversation(context) {
+            const btnId = context === 'conversation' ? 'btn-play-conv' : 'btn-play-ipa';
+            const btn = document.getElementById(btnId);
+            
+            if (isSpeaking) { stopPlayback(); return; }
+
+            isSpeaking = true;
+            stopFlag = false;
+            updateBtnState(btn, true);
+
+            for (let i = 0; i < data.conversation.length; i++) {
+                if (stopFlag) break;
+                const domId = `item-${context}-${i}`;
+                
+                highlightAndScroll(domId);
+                await speakPromise(data.conversation[i].text);
+                removeHighlight(domId);
+                
+                if (!stopFlag) await new Promise(r => setTimeout(r, 400));
+            }
+
+            stopPlayback();
+        }
+
+        // Helpers
+        function highlightAndScroll(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('speaking-highlight');
+                // For conversation, scroll smoothly to keep context visible
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function removeHighlight(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('speaking-highlight');
+        }
+
+        function speakPromise(text) {
+            return new Promise(resolve => {
+                if (stopFlag) { resolve(); return; }
+                const u = new SpeechSynthesisUtterance(text);
+                u.voice = selectedVoice;
+                u.rate = 0.9;
+                u.onend = resolve;
+                u.onerror = resolve;
+                speaker.speak(u);
+            });
+        }
+
+        function stopPlayback() {
+            stopFlag = true;
+            isSpeaking = false;
+            speaker.cancel();
+            ['btn-play-cons', 'btn-play-vows', 'btn-play-conv', 'btn-play-ipa'].forEach(id => {
+                updateBtnState(document.getElementById(id), false);
+            });
+            document.querySelectorAll('.speaking-highlight').forEach(el => el.classList.remove('speaking-highlight'));
+        }
+
+        function updateBtnState(btn, active) {
+            if (!btn) return;
+            if(active) {
+                btn.innerHTML = `<i data-lucide="square" class="w-3 h-3 mr-1.5"></i> Stop`;
+                btn.classList.add('is-speaking');
+            } else {
+                // Restore default text
+                let text = "Play List";
+                if(btn.id === 'btn-play-conv') text = "Play Dialogue";
+                if(btn.id === 'btn-play-ipa') text = "Play Phonetics";
+                
+                // Icon size adjustment
+                const size = (btn.id.includes('conv') || btn.id.includes('ipa')) ? 'w-4 h-4' : 'w-3 h-3';
+                
+                btn.innerHTML = `<i data-lucide="play" class="${size} mr-1.5"></i> ${text}`;
+                btn.classList.remove('is-speaking');
+            }
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
